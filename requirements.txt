@@ -113,7 +113,7 @@ packaging==24.1
 pandas==2.2.2
 pb-bss-eval==0.0.2
 pedalboard==0.8.9
-pesq==0.0.4
+pesq
 phonemizer==3.3.0
 pillow==10.4.0
 platformdirs==4.2.2
