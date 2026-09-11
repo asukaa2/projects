@@ -394,22 +394,22 @@ with gr.Blocks(title="🔊",theme=gr.themes.Base(primary_hue="blue",neutral_hue=
                 outputs=[spk_item, protect0, protect1, file_index2, file_index4],
             )
         with gr.TabItem("Download"):
-        	with gr.TabItem("Download Music"):
+            with gr.TabItem("Download Music"):
                 url_input = gr.Textbox(label="URL YT", placeholder="Enter YouTube URL here...")
-            with gr.Row():
-                cookie_browser = gr.Dropdown(
-                    label="Extract cookies from browser (optional)",
-                    choices=["none", "chrome", "firefox", "edge", "brave", "opera", "vivaldi"],
-                    value="none",
-                    allow_custom_value=False,
-                    info="Select a browser to auto-extract login cookies. Requires you to be logged into YouTube in that browser.",
+                with gr.Row():
+                    cookie_browser = gr.Dropdown(
+                        label="Extract cookies from browser (optional)",
+                        choices=["none", "chrome", "firefox", "edge", "brave", "opera", "vivaldi"],
+                        value="none",
+                        allow_custom_value=False,
+                        info="Select a browser to auto-extract login cookies. Requires you to be logged into YouTube in that browser.",
                 )
-            with gr.Row():
-                cookie_file = gr.File(
-                    label="Or upload cookies.txt (optional)",
-                    file_types=[".txt"],
-                    file_count="single",
-                )
+                with gr.Row():
+                    cookie_file = gr.File(
+                        label="Or upload cookies.txt (optional)",
+                        file_types=[".txt"],
+                        file_count="single",
+                    )
                 with gr.Row():
                     optau = gr.Audio(label="Output", type="filepath")
                 dl_yt = gr.Button("Download", variant="primary")
