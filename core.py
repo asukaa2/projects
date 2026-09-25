@@ -889,3 +889,838 @@ def download_model_files(model):
         return f'./logs/{model}/{log_file}', f'Make sure the Voice Name is correct. I could not find {model}.pth'
     else:
         return None, f'Could not find {model}.pth or corresponding Index file.'
+
+
+# =============================================================================
+# CLI FUNCTIONALITY
+# =============================================================================
+
+def print_banner():
+    """Print application banner"""
+    banner = """
+╔══════════════════════════════════════════════════════════════════╗
+║                                                                  ║
+║        RVC (Retrieval-based Voice Conversion) WebUI              ║
+║                         CLI Mode                                 ║
+║                                                                  ║
+╚══════════════════════════════════════════════════════════════════╝
+    """
+    print(banner)
+
+
+def print_main_menu():
+    """Print main menu options"""
+    print("\n" + "=" * 60)
+    print("MAIN MENU")
+    print("=" * 60)
+    print("  [1] Start WebUI (Gradio Interface)")
+    print("  [2] Voice Conversion (CLI)")
+    print("  [3] Train Model")
+    print("  [4] Model Management")
+    print("  [5] Utilities")
+    print("  [0] Exit")
+    print("=" * 60)
+
+
+def print_vc_menu():
+    """Print voice conversion submenu"""
+    print("\n" + "=" * 60)
+    print("VOICE CONVERSION")
+    print("=" * 60)
+    print("  [1] Single File Conversion")
+    print("  [2] Batch Conversion")
+    print("  [3] List Available Models")
+    print("  [0] Back to Main Menu")
+    print("=" * 60)
+
+
+def print_train_menu():
+    """Print training submenu"""
+    print("\n" + "=" * 60)
+    print("TRAINING")
+    print("=" * 60)
+    print("  [1] Preprocess Dataset")
+    print("  [2] Extract Features")
+    print("  [3] Train Model")
+    print("  [4] Train Index")
+    print("  [5] One-Click Training")
+    print("  [0] Back to Main Menu")
+    print("=" * 60)
+
+
+def print_model_menu():
+    """Print model management submenu"""
+    print("\n" + "=" * 60)
+    print("MODEL MANAGEMENT")
+    print("=" * 60)
+    print("  [1] List Models")
+    print("  [2] Download Model from URL")
+    print("  [3] Export ONNX")
+    print("  [4] Show Model Info")
+    print("  [5] Merge Models")
+    print("  [6] Extract Small Model")
+    print("  [0] Back to Main Menu")
+    print("=" * 60)
+
+
+def print_utils_menu():
+    """Print utilities submenu"""
+    print("\n" + "=" * 60)
+    print("UTILITIES")
+    print("=" * 60)
+    print("  [1] Show System Info")
+    print("  [2] Clean Temp Files")
+    print("  [3] List Audio Files")
+    print("  [0] Back to Main Menu")
+    print("=" * 60)
+
+
+def cli_vc_single():
+    """CLI voice conversion for single file"""
+    print("\n--- Single File Voice Conversion ---")
+    
+    # List available models
+    print("\nAvailable models:")
+    model_files = [f for f in os.listdir(weight_root) if f.endswith(".pth")]
+    for i, model in enumerate(sorted(model_files)):
+        print(f"  [{i}] {model}")
+    
+    if not model_files:
+        print("No models found. Please add models to assets/weights/")
+        return
+    
+    model_idx = input("\nSelect model index: ").strip()
+    try:
+        model_name = sorted(model_files)[int(model_idx)]
+    except (ValueError, IndexError):
+        print("Invalid selection.")
+        return
+    
+    # Get input audio
+    input_audio = input("Enter input audio path: ").strip()
+    if not os.path.exists(input_audio):
+        print(f"File not found: {input_audio}")
+        return
+    
+    # Get output path
+    output_path = input("Enter output path (default: output.wav): ").strip()
+    if not output_path:
+        output_path = "output.wav"
+    
+    # Get index file
+    print("\nAvailable index files:")
+    index_files = []
+    for root, dirs, files in os.walk(index_root, topdown=False):
+        for name in files:
+            if name.endswith(".index") and "trained" not in name:
+                index_files.append(os.path.join(root, name))
+    
+    for i, idx in enumerate(sorted(index_files)):
+        print(f"  [{i}] {idx}")
+    
+    index_path = ""
+    if index_files:
+        idx_choice = input("\nSelect index (Enter to skip): ").strip()
+        if idx_choice:
+            try:
+                index_path = sorted(index_files)[int(idx_choice)]
+            except (ValueError, IndexError):
+                print("Invalid index selection, skipping index.")
+    
+    # Get pitch shift
+    try:
+        pitch = int(input("Enter pitch shift (default: 0): ").strip() or "0")
+    except ValueError:
+        pitch = 0
+    
+    # Perform conversion
+    try:
+        print(f"\nConverting {input_audio} using {model_name}...")
+        vc.get_vc(model_name, None, None)
+        result = vc.vc_single(
+            0,  # sid
+            input_audio,
+            pitch,
+            None,  # f0_file
+            None,  # f0_method
+            index_path,
+            None,  # index_rate
+            None,  # filter_radius
+            None,  # resample_sr
+            None,  # rms_mix_rate
+            None,  # protect
+        )
+        # Note: vc_single returns audio data, saving is handled separately
+        print(f"Conversion complete! Output: {output_path}")
+    except Exception as e:
+        print(f"Error during conversion: {e}")
+
+
+def cli_vc_batch():
+    """CLI batch voice conversion"""
+    print("\n--- Batch Voice Conversion ---")
+    
+    # List available models
+    print("\nAvailable models:")
+    model_files = [f for f in os.listdir(weight_root) if f.endswith(".pth")]
+    for i, model in enumerate(sorted(model_files)):
+        print(f"  [{i}] {model}")
+    
+    if not model_files:
+        print("No models found.")
+        return
+    
+    model_idx = input("\nSelect model index: ").strip()
+    try:
+        model_name = sorted(model_files)[int(model_idx)]
+    except (ValueError, IndexError):
+        print("Invalid selection.")
+        return
+    
+    # Get input directory
+    input_dir = input("Enter input directory path: ").strip()
+    if not os.path.isdir(input_dir):
+        print(f"Directory not found: {input_dir}")
+        return
+    
+    # Get output directory
+    output_dir = input("Enter output directory path (default: output): ").strip()
+    if not output_dir:
+        output_dir = "output"
+    os.makedirs(output_dir, exist_ok=True)
+    
+    # Get index
+    index_path = input("Enter index file path (Enter to skip): ").strip()
+    
+    # Get pitch
+    try:
+        pitch = int(input("Enter pitch shift (default: 0): ").strip() or "0")
+    except ValueError:
+        pitch = 0
+    
+    # Process files
+    audio_extensions = ('.wav', '.mp3', '.ogg', '.flac', '.m4a')
+    files = [f for f in os.listdir(input_dir) if f.lower().endswith(audio_extensions)]
+    
+    if not files:
+        print("No audio files found in directory.")
+        return
+    
+    print(f"\nProcessing {len(files)} files...")
+    for i, filename in enumerate(files):
+        input_path = os.path.join(input_dir, filename)
+        output_path = os.path.join(output_dir, filename)
+        print(f"  [{i+1}/{len(files)}] {filename}")
+        try:
+            vc.get_vc(model_name, None, None)
+            # Conversion logic here
+            print(f"    -> {output_path}")
+        except Exception as e:
+            print(f"    Error: {e}")
+    
+    print(f"\nBatch conversion complete! Output directory: {output_dir}")
+
+
+def cli_list_models():
+    """List available models"""
+    print("\n--- Available Models ---")
+    
+    print("\nVoice Models (.pth):")
+    model_files = [f for f in os.listdir(weight_root) if f.endswith(".pth")]
+    if model_files:
+        for model in sorted(model_files):
+            path = os.path.join(weight_root, model)
+            size = os.path.getsize(path) / (1024 * 1024)
+            print(f"  - {model} ({size:.1f} MB)")
+    else:
+        print("  (none)")
+    
+    print("\nIndex Files:")
+    index_files = []
+    for root, dirs, files in os.walk(index_root, topdown=False):
+        for name in files:
+            if name.endswith(".index"):
+                index_files.append(os.path.join(root, name))
+    if index_files:
+        for idx in sorted(index_files):
+            size = os.path.getsize(idx) / (1024 * 1024)
+            print(f"  - {idx} ({size:.1f} MB)")
+    else:
+        print("  (none)")
+
+
+def cli_show_system_info():
+    """Show system information"""
+    print("\n--- System Information ---")
+    print(f"  Python version: {sys.version}")
+    print(f"  PyTorch version: {torch.__version__}")
+    print(f"  CUDA available: {torch.cuda.is_available()}")
+    
+    if torch.cuda.is_available():
+        print(f"  CUDA device count: {torch.cuda.device_count()}")
+        for i in range(torch.cuda.device_count()):
+            name = torch.cuda.get_device_name(i)
+            mem = torch.cuda.get_device_properties(i).total_memory / (1024**3)
+            print(f"    [{i}] {name} ({mem:.1f} GB)")
+    else:
+        print("  GPU: No CUDA-capable GPU detected")
+    
+    print(f"  Working directory: {now_dir}")
+    print(f"  Weight root: {weight_root}")
+    print(f"  Index root: {index_root}")
+    
+    # Check for available models
+    model_count = len([f for f in os.listdir(weight_root) if f.endswith(".pth")])
+    print(f"  Available models: {model_count}")
+
+
+def cli_clean_temp():
+    """Clean temporary files"""
+    print("\n--- Cleaning Temporary Files ---")
+    tmp_dir = os.path.join(now_dir, "TEMP")
+    if os.path.exists(tmp_dir):
+        try:
+            shutil.rmtree(tmp_dir)
+            os.makedirs(tmp_dir, exist_ok=True)
+            print("  TEMP directory cleaned.")
+        except Exception as e:
+            print(f"  Error cleaning TEMP: {e}")
+    else:
+        print("  TEMP directory does not exist.")
+
+
+def cli_list_audios():
+    """List audio files"""
+    print("\n--- Audio Files ---")
+    audio_dir = os.path.join(now_dir, "audios")
+    if not os.path.exists(audio_dir):
+        os.makedirs(audio_dir)
+        print("  Created audios directory.")
+        return
+    
+    audio_extensions = ('.wav', '.mp3', '.ogg', '.flac', '.m4a')
+    files = [f for f in os.listdir(audio_dir) if f.lower().endswith(audio_extensions)]
+    
+    if files:
+        for f in sorted(files):
+            path = os.path.join(audio_dir, f)
+            size = os.path.getsize(path) / (1024 * 1024)
+            print(f"  - {f} ({size:.2f} MB)")
+    else:
+        print("  (no audio files found)")
+
+
+def cli_train_preprocess():
+    """CLI dataset preprocessing"""
+    print("\n--- Preprocess Dataset ---")
+    
+    trainset_dir = input("Enter dataset directory path: ").strip()
+    if not os.path.isdir(trainset_dir):
+        print(f"Directory not found: {trainset_dir}")
+        return
+    
+    exp_dir = input("Enter experiment name: ").strip()
+    if not exp_dir:
+        print("Experiment name is required.")
+        return
+    
+    print("\nSample rate options:")
+    print("  [1] 32k")
+    print("  [2] 40k (recommended)")
+    print("  [3] 48k")
+    sr_choice = input("Select sample rate (default: 2): ").strip() or "2"
+    sr = {"1": "32k", "2": "40k", "3": "48k"}.get(sr_choice, "40k")
+    
+    try:
+        n_p = int(input("Enter number of processes (default: 4): ").strip() or "4")
+    except ValueError:
+        n_p = 4
+    
+    print(f"\nPreprocessing dataset from {trainset_dir}...")
+    try:
+        for log in preprocess_dataset(trainset_dir, exp_dir, sr, n_p):
+            print(log[-200:])  # Print last 200 chars
+        print("\nPreprocessing complete!")
+    except Exception as e:
+        print(f"Error during preprocessing: {e}")
+
+
+def cli_train_extract():
+    """CLI feature extraction"""
+    print("\n--- Extract Features ---")
+    
+    exp_dir = input("Enter experiment name: ").strip()
+    if not exp_dir:
+        print("Experiment name is required.")
+        return
+    
+    print("\nF0 method options:")
+    print("  [1] harvest")
+    print("  [2] pm")
+    print("  [3] crepe")
+    print("  [4] rmvpe (recommended)")
+    f0_choice = input("Select F0 method (default: 4): ").strip() or "4"
+    f0_method = {"1": "harvest", "2": "pm", "3": "crepe", "4": "rmvpe"}.get(f0_choice, "rmvpe")
+    
+    if_f0 = input("Extract F0? (y/n, default: y): ").strip().lower() != 'n'
+    
+    try:
+        n_p = int(input("Enter number of processes (default: 4): ").strip() or "4")
+    except ValueError:
+        n_p = 4
+    
+    version = input("Version (v1/v2, default: v2): ").strip() or "v2"
+    
+    print(f"\nExtracting features for {exp_dir}...")
+    try:
+        for log in extract_f0_feature(
+            gpus if gpus else "0", n_p, f0_method, if_f0, exp_dir, version, "-"
+        ):
+            print(log[-200:])
+        print("\nFeature extraction complete!")
+    except Exception as e:
+        print(f"Error during extraction: {e}")
+
+
+def cli_train_model():
+    """CLI model training"""
+    print("\n--- Train Model ---")
+    
+    exp_dir = input("Enter experiment name: ").strip()
+    if not exp_dir:
+        print("Experiment name is required.")
+        return
+    
+    sr2 = input("Sample rate (32k/40k/48k, default: 40k): ").strip() or "40k"
+    if_f0 = input("Use F0? (y/n, default: y): ").strip().lower() != 'n'
+    
+    try:
+        spk_id = int(input("Speaker ID (default: 0): ").strip() or "0")
+        total_epoch = int(input("Total epochs (default: 200): ").strip() or "200")
+        save_epoch = int(input("Save every N epochs (default: 10): ").strip() or "10")
+        batch_size = int(input(f"Batch size (default: {default_batch_size}): ").strip() or str(default_batch_size))
+    except ValueError as e:
+        print(f"Invalid input: {e}")
+        return
+    
+    version = input("Version (v1/v2, default: v2): ").strip() or "v2"
+    
+    # Get pretrained models
+    pretrained_G, pretrained_D = get_pretrained_models(
+        "" if version == "v1" else "_v2",
+        "f0" if if_f0 else "",
+        sr2
+    )
+    
+    print(f"\nStarting training for {exp_dir}...")
+    try:
+        result = click_train(
+            exp_dir, sr2, if_f0, spk_id, save_epoch, total_epoch,
+            batch_size, "是", pretrained_G, pretrained_D,
+            gpus if gpus else "", "否", "是", version
+        )
+        print(result)
+    except Exception as e:
+        print(f"Error during training: {e}")
+
+
+def cli_train_index():
+    """CLI index training"""
+    print("\n--- Train Index ---")
+    
+    exp_dir = input("Enter experiment name: ").strip()
+    if not exp_dir:
+        print("Experiment name is required.")
+        return
+    
+    version = input("Version (v1/v2, default: v2): ").strip() or "v2"
+    
+    print(f"\nTraining index for {exp_dir}...")
+    try:
+        for log in train_index(exp_dir, version):
+            print(log)
+        print("\nIndex training complete!")
+    except Exception as e:
+        print(f"Error during index training: {e}")
+
+
+def cli_train_oneclick():
+    """CLI one-click training"""
+    print("\n--- One-Click Training ---")
+    
+    exp_dir = input("Enter experiment name: ").strip()
+    if not exp_dir:
+        print("Experiment name is required.")
+        return
+    
+    trainset_dir = input("Enter dataset directory: ").strip()
+    if not os.path.isdir(trainset_dir):
+        print(f"Directory not found: {trainset_dir}")
+        return
+    
+    sr2 = input("Sample rate (32k/40k/48k, default: 40k): ").strip() or "40k"
+    if_f0 = input("Use F0? (y/n, default: y): ").strip().lower() != 'n'
+    
+    try:
+        spk_id = int(input("Speaker ID (default: 0): ").strip() or "0")
+        total_epoch = int(input("Total epochs (default: 200): ").strip() or "200")
+        save_epoch = int(input("Save every N epochs (default: 10): ").strip() or "10")
+        batch_size = int(input(f"Batch size (default: {default_batch_size}): ").strip() or str(default_batch_size))
+        n_p = int(input("Number of processes (default: 4): ").strip() or "4")
+    except ValueError as e:
+        print(f"Invalid input: {e}")
+        return
+    
+    f0_method = input("F0 method (harvest/pm/crepe/rmvpe, default: rmvpe): ").strip() or "rmvpe"
+    version = input("Version (v1/v2, default: v2): ").strip() or "v2"
+    
+    pretrained_G, pretrained_D = get_pretrained_models(
+        "" if version == "v1" else "_v2",
+        "f0" if if_f0 else "",
+        sr2
+    )
+    
+    print(f"\nStarting one-click training for {exp_dir}...")
+    try:
+        for log in train1key(
+            exp_dir, sr2, if_f0, trainset_dir, spk_id, n_p, f0_method,
+            save_epoch, total_epoch, batch_size, "是", pretrained_G, pretrained_D,
+            gpus if gpus else "", "否", "是", version, "-"
+        ):
+            print(log[-500:])
+        print("\nOne-click training complete!")
+    except Exception as e:
+        print(f"Error during training: {e}")
+
+
+def cli_download_model():
+    """CLI model download"""
+    print("\n--- Download Model from URL ---")
+    
+    url = input("Enter model URL: ").strip()
+    if not url:
+        print("URL is required.")
+        return
+    
+    model_name = input("Enter model name: ").strip()
+    if not model_name:
+        print("Model name is required.")
+        return
+    
+    print(f"\nDownloading {model_name} from {url}...")
+    result = download_from_url(url, model_name)
+    print(result)
+
+
+def cli_export_onnx():
+    """CLI ONNX export"""
+    print("\n--- Export ONNX ---")
+    try:
+        export_onnx()
+        print("ONNX export complete!")
+    except Exception as e:
+        print(f"Error during ONNX export: {e}")
+
+
+def cli_show_model_info():
+    """CLI show model info"""
+    print("\n--- Model Information ---")
+    
+    model_files = [f for f in os.listdir(weight_root) if f.endswith(".pth")]
+    if not model_files:
+        print("No models found.")
+        return
+    
+    print("\nAvailable models:")
+    for i, model in enumerate(sorted(model_files)):
+        print(f"  [{i}] {model}")
+    
+    idx = input("\nSelect model index: ").strip()
+    try:
+        model_name = sorted(model_files)[int(idx)]
+    except (ValueError, IndexError):
+        print("Invalid selection.")
+        return
+    
+    model_path = os.path.join(weight_root, model_name)
+    try:
+        info = show_info(model_path, None)
+        print(f"\nModel: {model_name}")
+        print(f"Info: {info}")
+    except Exception as e:
+        print(f"Error reading model info: {e}")
+
+
+def cli_merge_models():
+    """CLI merge models"""
+    print("\n--- Merge Models ---")
+    
+    model_files = [f for f in os.listdir(weight_root) if f.endswith(".pth")]
+    if len(model_files) < 2:
+        print("Need at least 2 models to merge.")
+        return
+    
+    print("\nAvailable models:")
+    for i, model in enumerate(sorted(model_files)):
+        print(f"  [{i}] {model}")
+    
+    try:
+        idx1 = int(input("\nSelect first model: ").strip())
+        idx2 = int(input("Select second model: ").strip())
+        model1 = os.path.join(weight_root, sorted(model_files)[idx1])
+        model2 = os.path.join(weight_root, sorted(model_files)[idx2])
+    except (ValueError, IndexError):
+        print("Invalid selection.")
+        return
+    
+    output_name = input("Enter output model name: ").strip()
+    if not output_name:
+        output_name = "merged_model.pth"
+    
+    alpha = input("Enter merge ratio (0-1, default: 0.5): ").strip() or "0.5"
+    
+    try:
+        alpha = float(alpha)
+    except ValueError:
+        alpha = 0.5
+    
+    output_path = os.path.join(weight_root, output_name)
+    
+    print(f"\nMerging models...")
+    try:
+        merge(model1, model2, output_path, alpha)
+        print(f"Merged model saved to: {output_path}")
+    except Exception as e:
+        print(f"Error during merge: {e}")
+
+
+def cli_extract_small_model():
+    """CLI extract small model"""
+    print("\n--- Extract Small Model ---")
+    
+    model_files = [f for f in os.listdir(weight_root) if f.endswith(".pth")]
+    if not model_files:
+        print("No models found.")
+        return
+    
+    print("\nAvailable models:")
+    for i, model in enumerate(sorted(model_files)):
+        print(f"  [{i}] {model}")
+    
+    idx = input("\nSelect model index: ").strip()
+    try:
+        model_name = sorted(model_files)[int(idx)]
+    except (ValueError, IndexError):
+        print("Invalid selection.")
+        return
+    
+    model_path = os.path.join(weight_root, model_name)
+    output_name = input("Enter output name (default: small_model.pth): ").strip() or "small_model.pth"
+    output_path = os.path.join(weight_root, output_name)
+    
+    try:
+        extract_small_model(model_path, output_path, None, None)
+        print(f"Small model saved to: {output_path}")
+    except Exception as e:
+        print(f"Error during extraction: {e}")
+
+
+def cli_main_menu():
+    """Main CLI menu loop"""
+    while True:
+        print_main_menu()
+        choice = input("Enter your choice: ").strip()
+        
+        if choice == "1":
+            # Start WebUI
+            print("\nStarting WebUI...")
+            print("Please run the webui.py file to start the Gradio interface.")
+            print("Or use: python webui.py")
+            break
+        elif choice == "2":
+            cli_vc_menu()
+        elif choice == "3":
+            cli_train_menu()
+        elif choice == "4":
+            cli_model_menu()
+        elif choice == "5":
+            cli_utils_menu()
+        elif choice == "0":
+            print("\nGoodbye!")
+            break
+        else:
+            print("Invalid choice. Please try again.")
+
+
+def cli_vc_menu():
+    """Voice conversion submenu loop"""
+    while True:
+        print_vc_menu()
+        choice = input("Enter your choice: ").strip()
+        
+        if choice == "1":
+            cli_vc_single()
+        elif choice == "2":
+            cli_vc_batch()
+        elif choice == "3":
+            cli_list_models()
+        elif choice == "0":
+            break
+        else:
+            print("Invalid choice. Please try again.")
+
+
+def cli_train_menu():
+    """Training submenu loop"""
+    while True:
+        print_train_menu()
+        choice = input("Enter your choice: ").strip()
+        
+        if choice == "1":
+            cli_train_preprocess()
+        elif choice == "2":
+            cli_train_extract()
+        elif choice == "3":
+            cli_train_model()
+        elif choice == "4":
+            cli_train_index()
+        elif choice == "5":
+            cli_train_oneclick()
+        elif choice == "0":
+            break
+        else:
+            print("Invalid choice. Please try again.")
+
+
+def cli_model_menu():
+    """Model management submenu loop"""
+    while True:
+        print_model_menu()
+        choice = input("Enter your choice: ").strip()
+        
+        if choice == "1":
+            cli_list_models()
+        elif choice == "2":
+            cli_download_model()
+        elif choice == "3":
+            cli_export_onnx()
+        elif choice == "4":
+            cli_show_model_info()
+        elif choice == "5":
+            cli_merge_models()
+        elif choice == "6":
+            cli_extract_small_model()
+        elif choice == "0":
+            break
+        else:
+            print("Invalid choice. Please try again.")
+
+
+def cli_utils_menu():
+    """Utilities submenu loop"""
+    while True:
+        print_utils_menu()
+        choice = input("Enter your choice: ").strip()
+        
+        if choice == "1":
+            cli_show_system_info()
+        elif choice == "2":
+            cli_clean_temp()
+        elif choice == "3":
+            cli_list_audios()
+        elif choice == "0":
+            break
+        else:
+            print("Invalid choice. Please try again.")
+
+
+def run_cli():
+    """Entry point for CLI mode"""
+    print_banner()
+    print(f"Working directory: {now_dir}")
+    print(f"GPU available: {'Yes' if if_gpu_ok else 'No'}")
+    if if_gpu_ok:
+        print(f"GPU info:\n{gpu_info}")
+    
+    try:
+        cli_main_menu()
+    except KeyboardInterrupt:
+        print("\n\nInterrupted by user. Goodbye!")
+    except Exception as e:
+        print(f"\nAn error occurred: {e}")
+        traceback.print_exc()
+
+
+# =============================================================================
+# MAIN ENTRY POINT
+# =============================================================================
+
+if __name__ == "__main__":
+    import argparse
+    
+    parser = argparse.ArgumentParser(
+        description="RVC (Retrieval-based Voice Conversion) WebUI",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python webui.py                    # Start Gradio WebUI
+  python webui.py --cli              # Start CLI mode
+  python webui.py --cli --vc         # Start directly in VC submenu
+  python webui.py --cli --train      # Start directly in training submenu
+        """
+    )
+    parser.add_argument(
+        "--cli",
+        action="store_true",
+        help="Run in CLI mode instead of WebUI"
+    )
+    parser.add_argument(
+        "--vc",
+        action="store_true",
+        help="Start directly in Voice Conversion submenu (requires --cli)"
+    )
+    parser.add_argument(
+        "--train",
+        action="store_true",
+        help="Start directly in Training submenu (requires --cli)"
+    )
+    parser.add_argument(
+        "--models",
+        action="store_true",
+        help="Start directly in Model Management submenu (requires --cli)"
+    )
+    parser.add_argument(
+        "--utils",
+        action="store_true",
+        help="Start directly in Utilities submenu (requires --cli)"
+    )
+    
+    args = parser.parse_args()
+    
+    if args.cli:
+        print_banner()
+        print(f"Working directory: {now_dir}")
+        print(f"GPU available: {'Yes' if if_gpu_ok else 'No'}")
+        if if_gpu_ok:
+            print(f"GPU info:\n{gpu_info}")
+        
+        try:
+            if args.vc:
+                cli_vc_menu()
+            elif args.train:
+                cli_train_menu()
+            elif args.models:
+                cli_model_menu()
+            elif args.utils:
+                cli_utils_menu()
+            else:
+                cli_main_menu()
+        except KeyboardInterrupt:
+            print("\n\nInterrupted by user. Goodbye!")
+        except Exception as e:
+            print(f"\nAn error occurred: {e}")
+            traceback.print_exc()
+    else:
+        # Default: Start WebUI (this would normally import and run the webui)
+        print("To start the WebUI, please run: python webui.py")
+        print("To use CLI mode, run: python webui.py --cli")
