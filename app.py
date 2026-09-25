@@ -1,5 +1,5 @@
 import gradio as gr
-from original import *
+from core import *
 from urllib.parse import urlparse, parse_qs
 from contextlib import suppress
 
