@@ -61,11 +61,11 @@ def get_index_path_from_model(sid):
 
 
 def load_hubert(config):
-    models = fairseq.load_model("assets/hubert/hubert_base.pt").to(self.device).eval()
-                
+    models = fairseq.load_model("assets/hubert/hubert_base.pt").to(config.device).eval()
+
     if config.is_half:
-        hubert_model = hubert_model.half()
+        models = models.half()
     else:
-        hubert_model = hubert_model.float()
-    
-    return models.eval()
+        models = models.float()
+
+    return models

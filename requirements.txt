@@ -58,5 +58,8 @@ onnxslim
 onnxscript
 onnx2torch>=1.5.15
 
+# Model serialization
+safetensors>=0.4.0
+
 # Cryptography section
 pycryptodome>=3.9.6,<4.0.0
