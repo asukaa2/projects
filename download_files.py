@@ -13,7 +13,5 @@ files = {
 for file, link in files.items():
     file_path = os.path.join(assets_folder, file)
     if not os.path.exists(file_path):
-        try:
-            subprocess.run(['wget', link, '-O', file_path], check=True)
-        except subprocess.CalledProcessError as e:
-            print(f"Error downloading {file}: {e}")
+        os.system(f'wget', link, '-O', file_path)
+        
