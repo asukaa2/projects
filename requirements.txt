@@ -1,47 +1,72 @@
 
-
---index-url https://mirrors.pku.edu.cn/pypi/simple
-
 # Packaging support. Gradio 3.14 still imports pkg_resources, so Setuptools
 # must remain on the last generation that provides it.
 setuptools>=75.0,<81
 wheel>=0.45,<1
 packaging>=24.0
 
-# Direct project dependencies. Upper bounds are used only where a newer major
-# release changes an API/ABI used by this project or breaks NumPy 1.x support.
-av>=15.1.0,<16
-einops>=0.8.0,<1
-faiss-cpu>=1.13.0,<2
-ffmpeg-python>=0.2.0,<1
-FreeSimpleGUI>=5.1.0,<5.2
-librosa>=0.10.2,<0.11
-local-attention>=1.11.0,<2
-matplotlib>=3.8.2,<4
-networkx>=3.2.0,<4
-numpy>=1.26.4,<2
+# Platform-specific requirements section
+pip>=23.3
+wheel
+omegaconf>=2.0.6
+setuptools==81.0.0
+webrtcvad-wheels>=2.0.14
 
-# Five-model MSST inference backend. Install both packages from the index;
-# local wheel paths are intentionally not used by this requirements file.
-pymss==2.0.14
-pymss-core==0.1.4
+onnxruntime; sys_platform == 'darwin'
+onnxruntime-gpu; sys_platform != 'darwin'
 
-# ONNX Runtime 1.19.x uses the CUDA 12 / cuDNN 9 provider ABI. Later current
-# releases have moved to CUDA 13, so this compatibility window is intentional.
-onnxruntime-gpu>=1.19.2,<1.20
-coloredlogs>=15.0,<16
+# Core dependencies
+PyYAML>=6.0
+tiktoken
+hyperpyyaml
+torch>=2.3.1
+tqdm>=4.63.1
+torchvision>=0.18.1
+torchaudio>=2.3.1
+torchcodec==0.9.1
 
-opencv-python-headless>=4.10.0,<5
-praat-parselmouth>=0.4.5,<1
-PyYAML>=6.0.1
-scikit-learn>=1.6.0,<2
-scipy>=1.13.1,<2
-sounddevice>=0.5.0,<1
-soundfile>=0.13.0,<1
-tensorboard>=2.19.0
-torchfcpe>=0.0.4,<0.1
-tqdm>=4.67.0,<5
-transformers>=4.49.0,<4.50
+faiss-cpu==1.7.3; python_version < "3.12"
+faiss-cpu>=1.7.3; python_version >= "3.12"
+
+# Machine learning, NLP and deep learning
+transformers>=4.49.0
+scikit-learn
+einops>=0.8.0
+
+# Pitch and sound processing
+librosa>=0.10.2
+pydub>=0.25.1
+praat-parselmouth
+soundfile>=0.13.0
+pedalboard
+
+# Data processing and calculation
+numpy>=1.25.2
+numba>=0.57.0
+scipy>=1.15.0
+matplotlib>=3.7.2
+
+# Implementation and web framework
+requests>=2.32.3
+aiohttp
+pysrt
+
+# Utility section
+yt-dlp>=2026.03.17
+edge-tts>=7.2.7
+beautifulsoup4
+cffi>=2.0.0
+
+# Tensorboard and ONNX
+tensorboard
+onnx>=1.14
+onnxslim
+onnxscript
+onnx2torch>=1.5.15
+
+# Cryptography section
+pycryptodome>=3.9.6,<4.0.0
+
 
 # Gradio 3.14 API compatibility. Newer Gradio/FastAPI/Pydantic generations
 # changed component, event, generator, request and launch behavior used here.
