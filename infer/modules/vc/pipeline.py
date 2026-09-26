@@ -2,6 +2,7 @@ import os
 import sys
 import traceback
 import logging
+import math
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +23,6 @@ from infer.lib.predictor.generator import Generator
 bh, ah = signal.butter(N=5, Wn=48, btype="high", fs=16000)
 
 input_audio_path2wav = {}
-
-
 
 
 def change_rms(data1, sr1, data2, sr2, rate):  # 1是输入音频，2是输出音频,rate是2的占比
@@ -67,7 +66,46 @@ class Pipeline(object):
         self.t_max = self.sr * self.x_max  # 免查询时长阈值
         self.device = config.device
 
+        # 初始化 f0 生成器
+        self.f0_generator = Generator(
+            sample_rate=self.sr,
+            hop_length=self.window,
+            f0_min=50,
+            f0_max=1100,
+            is_half=self.is_half,
+            device=self.device,
+        )
 
+    def get_f0(
+        self,
+        input_audio_path,
+        x,
+        p_len,
+        f0_up_key,
+        f0_method,
+        filter_radius,
+        inp_f0=None,
+    ):
+        time_step = self.window / self.sr * 1000
+        f0_min = 50
+        f0_max = 1100
+        f0_mel_min = 1127 * np.log(1 + f0_min / 700)
+        f0_mel_max = 1127 * np.log(1 + f0_max / 700)
+
+        # 使用 Generator 计算 f0
+        f0_coarse, f0bak = self.f0_generator.calculator(
+            f0_method,
+            x,
+            f0_up_key=f0_up_key,
+            p_len=p_len,
+            filter_radius=filter_radius,
+            f0_autotune=False,
+            f0_autotune_strength=1,
+        )
+
+        # f0_coarse is already the mel-scaled quantized f0 (1-255)
+        # f0bak is the actual f0 values with pitch shift applied
+        f0 = f0bak
         f0 *= pow(2, f0_up_key / 12)
         # with open("test.txt","w")as f:f.write("\n".join([str(i)for i in f0.tolist()]))
         tf0 = self.sr // self.window  # 每秒f0点数
