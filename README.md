@@ -35,6 +35,6 @@ python app.py
   + The pretrained model is trained and tested by [yxlllc](https://github.com/yxlllc/RMVPE) and [RVC-Boss](https://github.com/RVC-Boss).
 
 ## Thanks to all contributors for their efforts
-<a href="https://github.com/Ezui0/projects/graphs/contributors" target="_blank">
+<a href="https://github.com/asukaa2/projects/graphs/contributors" target="_blank">
   <img src="https://contrib.rocks/image?repo=Ezui0/projects" />
 </a>
