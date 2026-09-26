@@ -17,12 +17,33 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+# ---------------------------------------------------------------------------
+# Unified config location
+# ---------------------------------------------------------------------------
+# All RVC configuration lives in a single file:  configs/config.json
+# It has two top-level keys:
+#   - "models":   per-architecture hyper-parameters, keyed by
+#                 "<version>/<sample_rate>" (e.g. "v1/32k", "v2/48k").
+#   - "realtime": default values for the realtime voice-changer tab.
+#
+# The previous layout had six files:
+#     configs/v1/32k.json   configs/v1/40k.json   configs/v1/48k.json
+#     configs/v2/32k.json   configs/v2/48k.json   configs/config.json
+# Those are now consolidated into the single file above. As a transitional
+# safety net, :func:`load_config_json` falls back to the old per-file
+# layout if the unified file is missing — so users who pin an older
+# checkout still load successfully.
+
+UNIFIED_CONFIG_PATH = "configs/config.json"
+
+# Architectures we know about. Order is preserved for deterministic iteration
+# and matches the historical ``version_config_list``.
 version_config_list = [
-    "v1/32k.json",
-    "v1/40k.json",
-    "v1/48k.json",
-    "v2/48k.json",
-    "v2/32k.json",
+    "v1/32k",
+    "v1/40k",
+    "v1/48k",
+    "v2/32k",
+    "v2/48k",
 ]
 
 
@@ -34,6 +55,50 @@ def singleton_variable(func):
 
     wrapper.instance = None
     return wrapper
+
+
+def _load_unified_config() -> dict:
+    """Load the unified configs/config.json and return its raw contents."""
+    with open(UNIFIED_CONFIG_PATH, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _load_legacy_per_file() -> dict:
+    """Back-compat fallback: read the old configs/v1/*.json + v2/*.json files.
+
+    Returns a dict keyed by "<version>/<sr>" (without the trailing ``.json``)
+    so that downstream code that does ``config.json_config["v1/32k"]`` still
+    works without modification.
+    """
+    d = {}
+    legacy_paths = [
+        ("v1/32k", "configs/v1/32k.json"),
+        ("v1/40k", "configs/v1/40k.json"),
+        ("v1/48k", "configs/v1/48k.json"),
+        ("v2/32k", "configs/v2/32k.json"),
+        ("v2/48k", "configs/v2/48k.json"),
+    ]
+    for key, path in legacy_paths:
+        with open(path, "r", encoding="utf-8") as f:
+            d[key] = json.load(f)
+    return d
+
+
+def load_realtime_config() -> dict:
+    """Return the realtime voice-changer defaults from the unified file.
+
+    Returns an empty dict if the unified file or its ``realtime`` section
+    is missing. The realtime tab in the WebUI passes these values via
+    function arguments, so an empty dict is safe — the caller's own
+    defaults take over.
+    """
+    if not os.path.isfile(UNIFIED_CONFIG_PATH):
+        return {}
+    try:
+        raw = _load_unified_config()
+    except (json.JSONDecodeError, OSError):
+        return {}
+    return raw.get("realtime", {})
 
 
 @singleton_variable
@@ -58,11 +123,41 @@ class Config:
 
     @staticmethod
     def load_config_json() -> dict:
-        d = {}
-        for config_file in version_config_list:
-            with open(f"configs/{config_file}", "r") as f:
-                d[config_file] = json.load(f)
-        return d
+        """Load the architecture configs and return them as a flat dict.
+
+        Returns
+        -------
+        dict
+            ``{"v1/32k": {...}, "v1/40k": {...}, "v1/48k": {...},
+               "v2/32k": {...}, "v2/48k": {...}}`` — the same shape that the
+            old per-file loader produced, so call sites in
+            ``infer-web.py`` and ``core.py`` keep working unchanged.
+        """
+        # Try the unified file first.
+        if os.path.isfile(UNIFIED_CONFIG_PATH):
+            try:
+                raw = _load_unified_config()
+            except (json.JSONDecodeError, OSError) as exc:
+                logger.warning(
+                    "Failed to read %s: %s. Falling back to per-file layout.",
+                    UNIFIED_CONFIG_PATH, exc,
+                )
+                return _load_legacy_per_file()
+            models = raw.get("models")
+            if not isinstance(models, dict) or not models:
+                logger.warning(
+                    "%s has no 'models' section. Falling back to per-file layout.",
+                    UNIFIED_CONFIG_PATH,
+                )
+                return _load_legacy_per_file()
+            return models
+
+        # No unified file — fall back to the legacy per-file layout.
+        logger.info(
+            "%s not found; loading legacy per-file configs (v1/*.json, v2/*.json).",
+            UNIFIED_CONFIG_PATH,
+        )
+        return _load_legacy_per_file()
 
     @staticmethod
     def arg_parse() -> tuple:
@@ -188,21 +283,21 @@ class Config:
             logger.info("Use DirectML instead")
             if (
                 os.path.exists(
-                    "runtime\Lib\site-packages\onnxruntime\capi\DirectML.dll"
+                    r"runtime\Lib\site-packages\onnxruntime\capi\DirectML.dll"
                 )
                 == False
             ):
                 try:
                     os.rename(
-                        "runtime\Lib\site-packages\onnxruntime",
-                        "runtime\Lib\site-packages\onnxruntime-cuda",
+                        r"runtime\Lib\site-packages\onnxruntime",
+                        r"runtime\Lib\site-packages\onnxruntime-cuda",
                     )
                 except:
                     pass
                 try:
                     os.rename(
-                        "runtime\Lib\site-packages\onnxruntime-dml",
-                        "runtime\Lib\site-packages\onnxruntime",
+                        r"runtime\Lib\site-packages\onnxruntime-dml",
+                        r"runtime\Lib\site-packages\onnxruntime",
                     )
                 except:
                     pass
@@ -216,21 +311,21 @@ class Config:
                 logger.info(f"Use {self.instead} instead")
             if (
                 os.path.exists(
-                    "runtime\Lib\site-packages\onnxruntime\capi\onnxruntime_providers_cuda.dll"
+                    r"runtime\Lib\site-packages\onnxruntime\capi\onnxruntime_providers_cuda.dll"
                 )
                 == False
             ):
                 try:
                     os.rename(
-                        "runtime\Lib\site-packages\onnxruntime",
-                        "runtime\Lib\site-packages\onnxruntime-dml",
+                        r"runtime\Lib\site-packages\onnxruntime",
+                        r"runtime\Lib\site-packages\onnxruntime-dml",
                     )
                 except:
                     pass
                 try:
                     os.rename(
-                        "runtime\Lib\site-packages\onnxruntime-cuda",
-                        "runtime\Lib\site-packages\onnxruntime",
+                        r"runtime\Lib\site-packages\onnxruntime-cuda",
+                        r"runtime\Lib\site-packages\onnxruntime",
                     )
                 except:
                     pass

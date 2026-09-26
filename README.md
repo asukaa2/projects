@@ -43,6 +43,9 @@ format** for distributing trained models.
   and any Python script that uses `RVCInferer` / `process_ckpt`.
 - **Format-agnostic loader** — every checkpoint-consuming code path now
   auto-detects `.pth` vs `.safetensors`, so you can mix and match freely.
+- **Single unified config file** — all model architectures and realtime
+  defaults now live in one `configs/config.json` (was 6 separate files).
+  Loader falls back to the old layout for back-compat.
 - **Internationalized UI** — bundled locales for English, Chinese
   (simplified / traditional / HK / SG), Japanese, French, Italian, Russian,
   Spanish, and Turkish.
@@ -325,7 +328,7 @@ projects/
 ├── app.py                      # Gradio WebUI entry point
 ├── infer-web.py                # Alternate WebUI entry point (legacy)
 ├── core.py                      # shared helpers used by the WebUI
-├── configs/                     # JSON model configs (v1/v2 × 32k/40k/48k) + Config class
+├── configs/                     # ★ Single config.json (model archs + realtime defaults) + Config class
 ├── assets/
 │   ├── weights/                 # drop trained models here (.pth or .safetensors)
 │   ├── pretrained/              # base pretrained checkpoints (v1)
@@ -376,25 +379,67 @@ projects/
 
 ## Configuration files
 
-Each model architecture has its own JSON config under `configs/`:
+All configuration lives in a single, human-readable file:
+[`configs/config.json`](./configs/config.json). It has two top-level
+sections:
+
+```jsonc
+{
+  "schema_version": 1,
+  "models": {
+    "v1/32k": { "train": {...}, "data": {...}, "model": {...} },
+    "v1/40k": { ... },
+    "v1/48k": { ... },
+    "v2/32k": { ... },
+    "v2/48k": { ... }
+  },
+  "realtime": {
+    "pth_path": "assets/weights/kikiV1.pth",
+    "index_path": "logs/kikiV1.index",
+    "pitch": 12.0,
+    "f0method": "rmvpe",
+    ...
+  }
+}
+```
+
+* **`models`** — per-architecture hyper-parameters, keyed by
+  `<version>/<sample_rate>`. Each entry has the same shape as the old
+  per-file configs (`train` / `data` / `model` blocks). When you load a
+  checkpoint, the values stored in the checkpoint's `config` field
+  (which mirrors one of these entries) are used to rebuild the
+  synthesizer — you don't need to keep the JSON alongside the model.
+* **`realtime`** — default values for the realtime voice-changer tab
+  (`tools/rvc_for_realtime.py`). The WebUI passes runtime overrides
+  via function arguments; these are only used as initial defaults.
+
+This layout replaces the historical six-file structure:
 
 ```
 configs/
-├── v1/32k.json   configs/v1/40k.json   configs/v1/48k.json
-└── v2/32k.json   configs/v2/48k.json
+├── v1/32k.json   v1/40k.json   v1/48k.json     ← removed
+├── v2/32k.json   v2/48k.json                   ← removed
+└── config.json                                ← repurposed (now the unified file above)
 ```
 
-These define the synthesizer hyperparameters (channel widths, kernel sizes,
-upsampling rates, etc.). When you load a checkpoint, the values stored in
-the checkpoint's `config` field (which mirrors one of these JSONs) are used
-to rebuild the synthesizer — you don't need to keep the JSON alongside the
-model.
+For backwards compatibility, `configs/config.py:load_config_json()`
+falls back to the old per-file layout if `configs/config.json` is
+missing or has no `models` section — so users on older checkouts still
+load successfully.
 
 The `Config` class in `configs/config.py` is responsible for:
-* picking the device (CUDA / MPS / XPU / CPU),
-* deciding whether FP16 is safe on the chosen device,
+* loading the unified config and exposing `cfg.json_config["v1/32k"]`,
+  `cfg.json_config["v2/48k"]`, etc. (same shape as before);
+* picking the device (CUDA / MPS / XPU / CPU);
+* deciding whether FP16 is safe on the chosen device (and flipping
+  `train.fp16_run` to `False` for every architecture when it isn't, via
+  `use_fp32_config()`);
 * exposing the `x_pad / x_query / x_center / x_max` chunking parameters
   used by the inference `Pipeline`.
+
+A standalone module-level helper, `load_realtime_config()`, returns
+the `realtime` section directly without constructing the full `Config`
+singleton — useful for tools that only need the realtime defaults.
 
 ---
 

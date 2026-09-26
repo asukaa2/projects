@@ -527,9 +527,9 @@ def click_train(
     if pretrained_D15 == "":
         logger.info("No pretrained Discriminator")
     if version19 == "v1" or sr2 == "40k":
-        config_path = "v1/%s.json" % sr2
+        config_path = "v1/%s" % sr2
     else:
-        config_path = "v2/%s.json" % sr2
+        config_path = "v2/%s" % sr2
     config_save_path = os.path.join(exp_dir, "config.json")
     if not pathlib.Path(config_save_path).exists():
         with open(config_save_path, "w", encoding="utf-8") as f:
