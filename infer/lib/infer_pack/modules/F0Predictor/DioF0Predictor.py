@@ -1,6 +1,10 @@
 import numpy as np
-import pyworld
 
+# Replaced `import pyworld` (the PyPI package) with a
+# parselmouth-based compat module so the project no longer
+# depends on the `pyworld` PyPI package. parselmouth is
+# already a hard dependency via the `pm` f0 method.
+from infer.lib.predictor import pyworld_compat as pyworld
 from infer.lib.infer_pack.modules.F0Predictor.F0Predictor import F0Predictor
 
 

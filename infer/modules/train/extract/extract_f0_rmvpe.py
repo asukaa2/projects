@@ -9,7 +9,6 @@ sys.path.append(now_dir)
 import logging
 
 import numpy as np
-import pyworld
 
 from infer.lib.audio import load_audio
 
@@ -21,6 +20,7 @@ i_gpu = sys.argv[3]
 os.environ["CUDA_VISIBLE_DEVICES"] = str(i_gpu)
 exp_dir = sys.argv[4]
 is_half = sys.argv[5]
+os.makedirs(exp_dir, exist_ok=True)
 f = open("%s/extract_f0_feature.log" % exp_dir, "a+")
 
 

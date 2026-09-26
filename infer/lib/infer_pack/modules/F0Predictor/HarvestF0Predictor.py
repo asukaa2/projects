@@ -1,6 +1,10 @@
 import numpy as np
-import pyworld
 
+# Replaced `import pyworld` (the PyPI package) with a
+# parselmouth-based compat module so the project no longer
+# depends on the `pyworld` PyPI package. parselmouth is
+# already a hard dependency via the `pm` f0 method.
+from infer.lib.predictor import pyworld_compat as pyworld
 from infer.lib.infer_pack.modules.F0Predictor.F0Predictor import F0Predictor
 
 
@@ -65,12 +69,12 @@ class HarvestF0Predictor(F0Predictor):
             p_len = wav.shape[0] // self.hop_length
         f0, t = pyworld.harvest(
             wav.astype(np.double),
-            fs=self.hop_length,
+            fs=self.sampling_rate,
             f0_ceil=self.f0_max,
             f0_floor=self.f0_min,
             frame_period=1000 * self.hop_length / self.sampling_rate,
         )
-        f0 = pyworld.stonemask(wav.astype(np.double), f0, t, self.fs)
+        f0 = pyworld.stonemask(wav.astype(np.double), f0, t, self.sampling_rate)
         return self.interpolate_f0(self.resize_f0(f0, p_len))[0]
 
     def compute_f0_uv(self, wav, p_len=None):

@@ -5,17 +5,60 @@ import traceback
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 os.environ["PYTORCH_MPS_HIGH_WATERMARK_RATIO"] = "0.0"
 
+# ---------------------------------------------------------------------------
+# Argument parsing
+# ---------------------------------------------------------------------------
+# Two historical calling conventions:
+#
+#   New (current callers in infer-web.py / core.py): 6 args after script
+#       python extract_feature_print.py <device> <n_part> <i_part> <i_gpu> "<exp_dir>" <version>
+#       -> len(sys.argv) == 7
+#
+#   Legacy (no GPU index): 5 args after script
+#       python extract_feature_print.py <device> <n_part> <i_part> "<exp_dir>" <version>
+#       -> len(sys.argv) == 6
+#
+# The previous code hardcoded the magic constants 6 / 7 and silently
+# mis-parsed if a caller passed a different count, leading to bugs like
+# `exp_dir` ending up as the version string ('v2'). We now derive the
+# layout from the *type* of the trailing args instead: if the second-to-
+# last arg is an integer, treat it as the GPU index; otherwise the 5-arg
+# form is in use.
+if len(sys.argv) < 6:
+    print(
+        "Usage: python extract_feature_print.py <device> <n_part> <i_part> "
+        "[<i_gpu>] <exp_dir> <version>",
+        file=sys.stderr,
+    )
+    sys.exit(2)
+
 device = sys.argv[1]
 n_part = int(sys.argv[2])
 i_part = int(sys.argv[3])
-if len(sys.argv) == 6:
+
+if len(sys.argv) == 7:
+    # New layout: ... <i_gpu> <exp_dir> <version>
+    i_gpu = sys.argv[4]
+    exp_dir = sys.argv[5]
+    version = sys.argv[6]
+    os.environ["CUDA_VISIBLE_DEVICES"] = str(i_gpu)
+elif len(sys.argv) == 6:
+    # Legacy layout: ... <exp_dir> <version>
     exp_dir = sys.argv[4]
     version = sys.argv[5]
 else:
-    i_gpu = sys.argv[4]
-    exp_dir = sys.argv[5]
-    os.environ["CUDA_VISIBLE_DEVICES"] = str(i_gpu)
-    version = sys.argv[6]
+    print(
+        "extract_feature_print.py: unexpected argument count %d; "
+        "expected 5 or 6 args after the script name." % (len(sys.argv) - 1),
+        file=sys.stderr,
+    )
+    sys.exit(2)
+
+# Ensure the experiment directory exists before we try to open the log
+# file inside it. The previous code assumed the caller had already
+# created the directory; if not, the script crashed with
+# FileNotFoundError on the open() call below.
+os.makedirs(exp_dir, exist_ok=True)
 import fairseq
 import numpy as np
 import soundfile as sf

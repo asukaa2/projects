@@ -9,7 +9,6 @@ sys.path.append(now_dir)
 import logging
 
 import numpy as np
-import pyworld
 
 from infer.lib.audio import load_audio
 
@@ -19,6 +18,7 @@ exp_dir = sys.argv[1]
 import torch_directml
 
 device = torch_directml.device(torch_directml.default_device())
+os.makedirs(exp_dir, exist_ok=True)
 f = open("%s/extract_f0_feature.log" % exp_dir, "a+")
 
 

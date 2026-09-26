@@ -11,7 +11,7 @@ import fairseq
 import faiss
 import numpy as np
 import parselmouth
-import pyworld
+from infer.lib.predictor import pyworld_compat as pyworld
 import scipy.signal as signal
 import torch
 import torch.nn as nn

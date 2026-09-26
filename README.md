@@ -452,7 +452,7 @@ WebUI's "Training" tab. The high-level flow is:
    → 16 kHz wav chunks.
 2. **Extract pitch** with one of the F0 predictors in
    `infer/lib/predictor/` (`rmvpe.py`, `crepe.py`, `fcpe.py`, `swipe.py`,
-   `pyworld.py`, `pm` via `parselmouth`).
+   `pyworld_compat.py` (parselmouth-backed), `pm` via `parselmouth`).
 3. **Extract HuBERT features** (`infer/modules/train/extract_feature_print.py`)
    → 256-dim content vectors.
 4. **Train** (`infer/modules/train/train.py`) — the trainer periodically

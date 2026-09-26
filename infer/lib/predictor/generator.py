@@ -14,7 +14,13 @@ sys.path.append(os.getcwd())
 
 from infer.lib.predictor.rmvpe import RMVPE
 from infer.lib.predictor.fcpe import FCPE
-from infer.lib.predictor.pyworld import PYWORLD
+# Replaced `from infer.lib.predictor.pyworld import PYWORLD` (a ctypes
+# binding that loads a binary `models/world.so`/`world.dll` blob at
+# runtime) with the parselmouth-based pyworld_compat module. The compat
+# module exposes the same `harvest`, `dio`, `stonemask` functions with
+# the standard `pyworld` PyPI signature, so the calling code below
+# only needs a tiny signature swap on the stonemask call.
+from infer.lib.predictor import pyworld_compat as pyworld
 from infer.lib.predictor.swipe import swipe, stonemask
 from infer.lib.predictor.crepe import CREPE, mean, median
 
@@ -191,24 +197,27 @@ class Generator:
         return self._resize_f0(f0, p_len)
     
     def get_f0_pyworld(self, x, p_len, filter_radius, model="harvest"):
-        if not hasattr(self, "pw"): self.pw = PYWORLD()
-
         x = x.astype(np.double)
-        pw = self.pw.harvest if model == "harvest" else self.pw.dio
+        # pyworld_compat exposes harvest / dio as free functions
+        # (matching the pyworld PyPI package signature).
+        pw = pyworld.harvest if model == "harvest" else pyworld.dio
 
         f0, t = pw(
-            x, 
-            fs=self.sample_rate, 
-            f0_ceil=self.f0_max, 
-            f0_floor=self.f0_min, 
+            x,
+            fs=self.sample_rate,
+            f0_ceil=self.f0_max,
+            f0_floor=self.f0_min,
             frame_period=1000 * self.window / self.sample_rate
         )
 
-        f0 = self.pw.stonemask(
-            x, 
-            self.sample_rate, 
-            t, 
-            f0
+        # Note: pyworld_compat.stonemask uses the standard pyworld
+        # signature (x, f0, t, fs) — different order from the old
+        # PYWORLD class which was (x, fs, tpos, f0).
+        f0 = pyworld.stonemask(
+            x,
+            f0,
+            t,
+            self.sample_rate,
         )
 
         if filter_radius > 2 and model == "harvest": f0 = medfilt(f0, filter_radius)

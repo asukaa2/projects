@@ -28,7 +28,10 @@ einops>=0.8.0
 # Pitch and sound processing
 librosa>=0.10.2
 pydub>=0.25.1
-praat-parselmouth
+# praat-parselmouth is used both directly (the `pm` f0 method in the
+# WebUI) and as the backend for `infer/lib/predictor/pyworld_compat.py`
+# which replaces the previous `pyworld` PyPI package dependency.
+praat-parselmouth>=0.4.3
 soundfile>=0.13.0
 pedalboard
 
