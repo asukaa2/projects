@@ -5,6 +5,15 @@ import traceback
 os.environ["PYTORCH_ENABLE_MPS_FALLBACK"] = "1"
 os.environ["PYTORCH_MPS_HIGH_WATERMARK_RATIO"] = "0.0"
 
+sys.path.append(os.getcwd())
+
+from infer.modules.vc import fairseq
+import numpy as np
+import soundfile as sf
+import torch
+import torch.nn.functional as F
+
+
 # ---------------------------------------------------------------------------
 # Argument parsing
 # ---------------------------------------------------------------------------
@@ -59,11 +68,7 @@ else:
 # created the directory; if not, the script crashed with
 # FileNotFoundError on the open() call below.
 os.makedirs(exp_dir, exist_ok=True)
-from infer.modules.vc import fairseq
-import numpy as np
-import soundfile as sf
-import torch
-import torch.nn.functional as F
+
 
 if "privateuseone" not in device:
     device = "cpu"
