@@ -59,7 +59,7 @@ else:
 # created the directory; if not, the script crashed with
 # FileNotFoundError on the open() call below.
 os.makedirs(exp_dir, exist_ok=True)
-import fairseq
+from infer.modules.vc import fairseq
 import numpy as np
 import soundfile as sf
 import torch
@@ -127,10 +127,8 @@ if os.access(model_path, os.F_OK) == False:
         % model_path
     )
     exit(0)
-models, saved_cfg, task = fairseq.checkpoint_utils.load_model_ensemble_and_task(
-    [model_path],
-    suffix="",
-)
+models = fairseq.fairseq.load_model("assets/hubert/hubert_base.pt").to(config.device).eval()
+
 model = models[0]
 model = model.to(device)
 printt("move model to %s" % device)
