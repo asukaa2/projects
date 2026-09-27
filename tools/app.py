@@ -17,6 +17,28 @@ logger = logging.getLogger(__name__)
 
 i18n = I18nAuto()
 logger.info(i18n)
+from i18n.i18n import set_language as i18n_set_language, \
+    get_language as i18n_get_language
+from i18n.locale.registry import LANGUAGES as _LANGUAGES
+
+# Build a sorted (display_name, locale_code) list for the
+# language dropdown. Display format: "English Name (Native)".
+_lang_choices = [
+    (f"{meta['name']} ({meta['native']})", code)
+    for code, meta in sorted(_LANGUAGES.items(), key=lambda x: x[1]['name'])
+]
+_lang_display_to_code = {disp: code for disp, code in _lang_choices}
+_lang_code_to_display = {code: disp for disp, code in _lang_choices}
+
+def _change_language(display_name):
+    """Gradio callback: switch the i18n language."""
+    code = _lang_display_to_code.get(display_name, i18n_get_language())
+    i18n_set_language(code)
+    # Re-initialize the existing I18nAuto singleton so the
+    # rest of the page picks up the new language.
+    global i18n
+    i18n = I18nAuto(code)
+    return gr.update()
 
 load_dotenv()
 config = Config()
@@ -39,12 +61,26 @@ for root, dirs, files in os.walk(index_root, topdown=False):
 
 app = gr.Blocks()
 with app:
+    with gr.Row():
+        _current_lang = i18n_get_language()
+        _current_display = _lang_code_to_display.get(_current_lang, _current_lang)
+        language_dropdown = gr.Dropdown(
+            label=i18n("语言 / Language"),
+            choices=[disp for disp, _ in _lang_choices],
+            value=_current_display,
+            interactive=True,
+        )
+        language_dropdown.change(
+            fn=_change_language,
+            inputs=[language_dropdown],
+            outputs=[language_dropdown],
+        )
     with gr.Tabs():
-        with gr.TabItem("在线demo"):
+        with gr.TabItem(i18n("在线demo")):
             gr.Markdown(
-                value="""
+                value=i18n("""
                 RVC 在线demo
-                """
+                """)
             )
             sid = gr.Dropdown(label=i18n("推理音色"), choices=sorted(names))
             with gr.Column():
@@ -61,7 +97,7 @@ with app:
             gr.Markdown(
                 value=i18n("男转女推荐+12key, 女转男推荐-12key, 如果音域爆炸导致音色失真也可以自己调整到合适音域. ")
             )
-            vc_input3 = gr.Audio(label="上传音频（长度小于90秒）")
+            vc_input3 = gr.Audio(label=i18n("上传音频（长度小于90秒）"))
             vc_transform0 = gr.Number(label=i18n("变调(整数, 半音数量, 升八度12降八度-12)"), value=0)
             f0method0 = gr.Radio(
                 label=i18n("选择音高提取算法,输入歌声可用pm提速,harvest低音好但巨慢无比,crepe效果好但吃GPU"),

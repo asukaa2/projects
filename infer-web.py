@@ -23,6 +23,28 @@ from sklearn.cluster import MiniBatchKMeans
 
 from configs.config import Config
 from i18n.i18n import I18nAuto
+from i18n.i18n import set_language as i18n_set_language, \
+    get_language as i18n_get_language
+from i18n.locale.registry import LANGUAGES as _LANGUAGES
+
+# Build a sorted (display_name, locale_code) list for the
+# language dropdown. Display format: "English Name (Native)".
+_lang_choices = [
+    (f"{meta['name']} ({meta['native']})", code)
+    for code, meta in sorted(_LANGUAGES.items(), key=lambda x: x[1]['name'])
+]
+_lang_display_to_code = {disp: code for disp, code in _lang_choices}
+_lang_code_to_display = {code: disp for disp, code in _lang_choices}
+
+def _change_language(display_name):
+    """Gradio callback: switch the i18n language."""
+    code = _lang_display_to_code.get(display_name, i18n_get_language())
+    i18n_set_language(code)
+    # Re-initialize the existing I18nAuto singleton so the
+    # rest of the page picks up the new language.
+    global i18n
+    i18n = I18nAuto(code)
+    return gr.update()
 from infer.lib.train.process_ckpt import (
     change_info,
     extract_small_model,
@@ -604,10 +626,10 @@ def train_index(exp_dir1, version19):
         else "%s/3_feature768" % (exp_dir)
     )
     if not os.path.exists(feature_dir):
-        return "请先进行特征提取!"
+        return i18n("请先进行特征提取!")
     listdir_res = list(os.listdir(feature_dir))
     if len(listdir_res) == 0:
-        return "请先进行特征提取！"
+        return i18n("请先进行特征提取！")
     infos = []
     npys = []
     for name in sorted(listdir_res):
@@ -666,7 +688,7 @@ def train_index(exp_dir1, version19):
         % (exp_dir, n_ivf, index_ivf.nprobe, exp_dir1, version19),
     )
     infos.append(
-        "成功构建索引，added_IVF%s_Flat_nprobe_%s_%s_%s.index"
+        i18n("成功构建索引，added_IVF%s_Flat_nprobe_%s_%s_%s.index")
         % (n_ivf, index_ivf.nprobe, exp_dir1, version19)
     )
     # faiss.write_index(index, '%s/added_IVF%s_Flat_FastScan_%s.index'%(exp_dir,n_ivf,version19))
@@ -773,6 +795,23 @@ with gr.Blocks(title="RVC WebUI") as app:
             "本软件以MIT协议开源, 作者不对软件具备任何控制力, 使用软件者、传播软件导出的声音者自负全责. <br>如不认可该条款, 则不能使用或引用软件包内任何代码和文件. 详见根目录<b>LICENSE</b>."
         )
     )
+    with gr.Row():
+        with gr.Column(scale=4):
+            gr.Markdown("# RVC WebUI")
+        with gr.Column(scale=1, min_width=250):
+            _current_lang = i18n_get_language()
+            _current_display = _lang_code_to_display.get(_current_lang, _current_lang)
+            language_dropdown = gr.Dropdown(
+                label=i18n("语言 / Language"),
+                choices=[disp for disp, _ in _lang_choices],
+                value=_current_display,
+                interactive=True,
+            )
+            language_dropdown.change(
+                fn=_change_language,
+                inputs=[language_dropdown],
+                outputs=[language_dropdown],
+            )
     with gr.Tabs():
         with gr.TabItem(i18n("模型推理")):
             with gr.Row():
@@ -1051,7 +1090,7 @@ with gr.Blocks(title="RVC WebUI") as app:
                             minimum=0,
                             maximum=20,
                             step=1,
-                            label="人声提取激进程度",
+                            label=i18n("人声提取激进程度"),
                             value=10,
                             interactive=True,
                             visible=False,  # 先不开放调整

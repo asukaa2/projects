@@ -1,5 +1,27 @@
 import gradio as gr
 from core import *
+from i18n.i18n import set_language as i18n_set_language, \
+    get_language as i18n_get_language
+from i18n.locale.registry import LANGUAGES as _LANGUAGES
+
+# Build a sorted (display_name, locale_code) list for the
+# language dropdown. Display format: "English Name (Native)".
+_lang_choices = [
+    (f"{meta['name']} ({meta['native']})", code)
+    for code, meta in sorted(_LANGUAGES.items(), key=lambda x: x[1]['name'])
+]
+_lang_display_to_code = {disp: code for disp, code in _lang_choices}
+_lang_code_to_display = {code: disp for disp, code in _lang_choices}
+
+def _change_language(display_name):
+    """Gradio callback: switch the i18n language."""
+    code = _lang_display_to_code.get(display_name, i18n_get_language())
+    i18n_set_language(code)
+    # Re-initialize the existing I18nAuto singleton so the
+    # rest of the page picks up the new language.
+    global i18n
+    i18n = I18nAuto(code)
+    return gr.update()
 from urllib.parse import urlparse, parse_qs
 from contextlib import suppress
 
@@ -127,6 +149,21 @@ def yt_download(link, cookie_file=None, cookie_browser=None):
 with gr.Blocks(title="🔊",theme=gr.themes.Base(primary_hue="blue",neutral_hue="zinc")) as app:
     with gr.Row():
         gr.Markdown("# EasyGUI V3")
+        with gr.Column(scale=1):
+            _current_lang = i18n_get_language()
+            _current_display = _lang_code_to_display.get(_current_lang, _current_lang)
+            language_dropdown = gr.Dropdown(
+                label=i18n("语言 / Language"),
+                choices=[disp for disp, _ in _lang_choices],
+                value=_current_display,
+                interactive=True,
+                scale=1,
+            )
+            language_dropdown.change(
+                fn=_change_language,
+                inputs=[language_dropdown],
+                outputs=[language_dropdown],
+            )
     with gr.Tabs():
         with gr.TabItem(i18n("模型推理")):
             with gr.Row():

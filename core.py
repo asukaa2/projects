@@ -597,10 +597,10 @@ def train_index(exp_dir1, version19):
         else "%s/3_feature768" % (exp_dir)
     )
     if not os.path.exists(feature_dir):
-        return "请先进行特征提取!"
+        return i18n("请先进行特征提取!")
     listdir_res = list(os.listdir(feature_dir))
     if len(listdir_res) == 0:
-        return "请先进行特征提取！"
+        return i18n("请先进行特征提取！")
     infos = []
     npys = []
     for name in sorted(listdir_res):
@@ -659,7 +659,7 @@ def train_index(exp_dir1, version19):
         % (exp_dir, n_ivf, index_ivf.nprobe, exp_dir1, version19),
     )
     infos.append(
-        "成功构建索引，added_IVF%s_Flat_nprobe_%s_%s_%s.index"
+        i18n("成功构建索引，added_IVF%s_Flat_nprobe_%s_%s_%s.index")
         % (n_ivf, index_ivf.nprobe, exp_dir1, version19)
     )
     # faiss.write_index(index, '%s/added_IVF%s_Flat_FastScan_%s.index'%(exp_dir,n_ivf,version19))
@@ -1317,7 +1317,7 @@ def cli_train_model():
         result = click_train(
             exp_dir, sr2, if_f0, spk_id, save_epoch, total_epoch,
             batch_size, "是", pretrained_G, pretrained_D,
-            gpus if gpus else "", "否", "是", version
+            gpus if gpus else "", i18n("否"), "是", version
         )
         print(result)
     except Exception as e:
@@ -1385,7 +1385,7 @@ def cli_train_oneclick():
         for log in train1key(
             exp_dir, sr2, if_f0, trainset_dir, spk_id, n_p, f0_method,
             save_epoch, total_epoch, batch_size, "是", pretrained_G, pretrained_D,
-            gpus if gpus else "", "否", "是", version, "-"
+            gpus if gpus else "", i18n("否"), "是", version, "-"
         ):
             print(log[-500:])
         print("\nOne-click training complete!")
