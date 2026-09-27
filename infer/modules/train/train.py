@@ -17,18 +17,8 @@ n_gpus = len(hps.gpus.split("-"))
 from random import randint, shuffle
 
 import torch
-try:
-    import intel_extension_for_pytorch as ipex # pylint: disable=import-error, unused-import
-    if torch.xpu.is_available():
-        from infer.modules.ipex import ipex_init
-        from infer.modules.ipex.gradscaler import gradscaler_init
-        from torch.xpu.amp import autocast
-        GradScaler = gradscaler_init()
-        ipex_init()
-    else:
-        from torch.cuda.amp import GradScaler, autocast
-except Exception:
-    from torch.cuda.amp import GradScaler, autocast
+
+from torch.cuda.amp import GradScaler, autocast
 
 torch.backends.cudnn.deterministic = False
 torch.backends.cudnn.benchmark = False
@@ -196,9 +186,7 @@ def run(rank, n_gpus, hps):
     )
     # net_g = DDP(net_g, device_ids=[rank], find_unused_parameters=True)
     # net_d = DDP(net_d, device_ids=[rank], find_unused_parameters=True)
-    if hasattr(torch, "xpu") and torch.xpu.is_available():
-        pass
-    elif torch.cuda.is_available():
+    if torch.cuda.is_available():
         net_g = DDP(net_g, device_ids=[rank])
         net_d = DDP(net_d, device_ids=[rank])
     else:
