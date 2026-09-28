@@ -86,7 +86,13 @@ else:
         res = x.clone().detach()
         return res
 
-    fairseq.modules.grad_multiply.GradMultiply.forward = forward_dml
+    # The GradMultiply autograd function lives at the top level of the
+    # local fairseq shim module (infer/modules/vc/fairseq.py), NOT under
+    # fairseq.modules.grad_multiply - that path doesn't exist on this
+    # in-tree shim (it would on a real fairseq install). Patching the
+    # forward function in place lets DirectML skip the gradient
+    # multiply that would otherwise break under DirectML.
+    fairseq.GradMultiply.forward = forward_dml
 
 f = open("%s/extract_f0_feature.log" % exp_dir, "a+")
 
@@ -132,9 +138,12 @@ if os.access(model_path, os.F_OK) == False:
         % model_path
     )
     exit(0)
-models = fairseq.fairseq.load_model("assets/hubert/hubert_base.pt").to(config.device).eval()
-
-model = models[0]
+# The fairseq shim (`infer/modules/vc/fairseq.py`) exposes `load_model`
+# directly at module level (not `fairseq.fairseq.load_model` and not
+# `fairseq.checkpoint_utils.load_model_ensemble_and_task` - those would
+# be the upstream fairseq package's API, which we don't have here).
+# `load_model` returns a single ready-to-use `HubertModel`, not a list.
+model = fairseq.load_model(model_path)
 model = model.to(device)
 printt("move model to %s" % device)
 if device not in ["mps", "cpu"]:
@@ -156,7 +165,7 @@ else:
                 if os.path.exists(out_path):
                     continue
 
-                feats = readwave(wav_path, normalize=saved_cfg.task.normalize)
+                feats = readwave(wav_path, normalize=False)
                 padding_mask = torch.BoolTensor(feats.shape).fill_(False)
                 inputs = {
                     "source": feats.half().to(device)
