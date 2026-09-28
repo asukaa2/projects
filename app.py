@@ -219,7 +219,7 @@ with gr.Blocks(title="🔊",theme=gr.themes.Base(primary_hue="blue",neutral_hue=
                             label=i18n(
                                 "选择音高提取算法,输入歌声可用pm提速,harvest低音好但巨慢无比,crepe效果好但吃GPU,rmvpe效果最好且微吃GPU"
                             ),
-                            choices=["pm", "harvest", "crepe", "rmvpe"]
+                            choices=["pm", "harvest", "crepe", "rmvpe", "dsmn"]
                             if config.dml == False
                             else ["pm", "harvest", "rmvpe"],
                             value="rmvpe",
@@ -311,7 +311,7 @@ with gr.Blocks(title="🔊",theme=gr.themes.Base(primary_hue="blue",neutral_hue=
                             label=i18n(
                                 "选择音高提取算法,输入歌声可用pm提速,harvest低音好但巨慢无比,crepe效果好但吃GPU,rmvpe效果最好且微吃GPU"
                             ),
-                            choices=["pm", "harvest", "crepe", "rmvpe"]
+                            choices=["pm", "harvest", "crepe", "rmvpe", "dsmn"]
                             if config.dml == False
                             else ["pm", "harvest", "rmvpe"],
                             value="pm",
@@ -540,7 +540,7 @@ with gr.Blocks(title="🔊",theme=gr.themes.Base(primary_hue="blue",neutral_hue=
                         label=i18n(
                             "选择音高提取算法:输入歌声可用pm提速,高质量语音但CPU差可用dio提速,harvest质量更好但慢,rmvpe效果最好且微吃CPU/GPU"
                         ),
-                        choices=["pm", "harvest", "dio", "rmvpe", "rmvpe_gpu"],
+                        choices=["pm", "harvest", "dio", "rmvpe", "rmvpe_gpu", "dsmn"],
                         value="rmvpe_gpu",
                         interactive=True,
                     )

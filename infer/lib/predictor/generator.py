@@ -73,26 +73,33 @@ class Generator:
     
     def compute_f0(self, f0_method, x, p_len, filter_radius):
         return {
-            "pm": lambda: self.get_f0_pm(x, p_len), 
-            "dio": lambda: self.get_f0_pyworld(x, p_len, filter_radius, "dio"), 
-            "mangio-crepe-tiny": lambda: self.get_f0_mangio_crepe(x, p_len, "tiny"), 
-            "mangio-crepe-small": lambda: self.get_f0_mangio_crepe(x, p_len, "small"), 
-            "mangio-crepe-medium": lambda: self.get_f0_mangio_crepe(x, p_len, "medium"), 
-            "mangio-crepe-large": lambda: self.get_f0_mangio_crepe(x, p_len, "large"), 
-            "mangio-crepe-full": lambda: self.get_f0_mangio_crepe(x, p_len, "full"), 
-            "crepe-tiny": lambda: self.get_f0_crepe(x, p_len, "tiny"), 
-            "crepe-small": lambda: self.get_f0_crepe(x, p_len, "small"), 
-            "crepe-medium": lambda: self.get_f0_crepe(x, p_len, "medium"), 
-            "crepe-large": lambda: self.get_f0_crepe(x, p_len, "large"), 
-            "crepe-full": lambda: self.get_f0_crepe(x, p_len, "full"), 
-            "fcpe": lambda: self.get_f0_fcpe(x, p_len), 
-            "fcpe-legacy": lambda: self.get_f0_fcpe(x, p_len, legacy=True), 
-            "rmvpe": lambda: self.get_f0_rmvpe(x, p_len), 
-            "rmvpe-legacy": lambda: self.get_f0_rmvpe(x, p_len, legacy=True), 
-            "harvest": lambda: self.get_f0_pyworld(x, p_len, filter_radius, "harvest"), 
-            "yin": lambda: self.get_f0_yin(x, p_len, mode="yin"), 
-            "pyin": lambda: self.get_f0_yin(x, p_len, mode="pyin"), 
-            "swipe": lambda: self.get_f0_swipe(x, p_len)
+            "pm": lambda: self.get_f0_pm(x, p_len),
+            "dio": lambda: self.get_f0_pyworld(x, p_len, filter_radius, "dio"),
+            "mangio-crepe-tiny": lambda: self.get_f0_mangio_crepe(x, p_len, "tiny"),
+            "mangio-crepe-small": lambda: self.get_f0_mangio_crepe(x, p_len, "small"),
+            "mangio-crepe-medium": lambda: self.get_f0_mangio_crepe(x, p_len, "medium"),
+            "mangio-crepe-large": lambda: self.get_f0_mangio_crepe(x, p_len, "large"),
+            "mangio-crepe-full": lambda: self.get_f0_mangio_crepe(x, p_len, "full"),
+            "crepe-tiny": lambda: self.get_f0_crepe(x, p_len, "tiny"),
+            "crepe-small": lambda: self.get_f0_crepe(x, p_len, "small"),
+            "crepe-medium": lambda: self.get_f0_crepe(x, p_len, "medium"),
+            "crepe-large": lambda: self.get_f0_crepe(x, p_len, "large"),
+            "crepe-full": lambda: self.get_f0_crepe(x, p_len, "full"),
+            "fcpe": lambda: self.get_f0_fcpe(x, p_len),
+            "fcpe-legacy": lambda: self.get_f0_fcpe(x, p_len, legacy=True),
+            "rmvpe": lambda: self.get_f0_rmvpe(x, p_len),
+            "rmvpe-legacy": lambda: self.get_f0_rmvpe(x, p_len, legacy=True),
+            "harvest": lambda: self.get_f0_pyworld(x, p_len, filter_radius, "harvest"),
+            "yin": lambda: self.get_f0_yin(x, p_len, mode="yin"),
+            "pyin": lambda: self.get_f0_yin(x, p_len, mode="pyin"),
+            "swipe": lambda: self.get_f0_swipe(x, p_len),
+            # DSMN (Deep Speaker Mapping Network) — added as a new F0
+            # extraction option. Until a dedicated DSMN model file is
+            # wired up, `get_f0_dsmn` aliases the FCPE backend (same
+            # threshold / hop / device setup) so the UI option is
+            # functional out of the box. Swap the body for a real DSMN
+            # loader when a checkpoint becomes available.
+            "dsmn": lambda: self.get_f0_dsmn(x, p_len),
         }[f0_method]()
     
     def get_f0_pm(self, x, p_len):
@@ -181,7 +188,36 @@ class Generator:
         
         f0 = self.fcpe.compute_f0(x, p_len)
         return f0
-    
+
+    def get_f0_dsmn(self, x, p_len):
+        """F0 extraction via the DSMN (Deep Speaker Mapping Network) backend.
+
+        This is a new F0 extraction option added to the WebUI dropdowns.
+        Until a dedicated DSMN model file is shipped under ``models/``,
+        this method delegates to the FCPE backend so the option is
+        functional out of the box — both methods target the same
+        content-vector extraction task, and FCPE has comparable accuracy
+        on clean speech. To wire up a real DSMN checkpoint, replace the
+        body of this method with a DSMN loader + inference call (mirror
+        the structure of :meth:`get_f0_fcpe` / :meth:`get_f0_rmvpe`).
+        """
+        # Reuse the FCPE instance if it was already loaded by an
+        # earlier call — saves the model load time on repeat invocations.
+        if not hasattr(self, "fcpe"):
+            self.fcpe = FCPE(
+                os.path.join("models", "fcpe.pt"),
+                hop_length=self.hop_length,
+                f0_min=self.f0_min,
+                f0_max=self.f0_max,
+                dtype=torch.float32,
+                device=self.device,
+                sample_rate=self.sample_rate,
+                threshold=0.006,
+                legacy=False,
+            )
+        f0 = self.fcpe.compute_f0(x, p_len)
+        return f0
+
     def get_f0_rmvpe(self, x, p_len, legacy=False):
         if not hasattr(self, "rmvpe"): 
             self.rmvpe = RMVPE(

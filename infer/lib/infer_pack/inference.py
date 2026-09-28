@@ -95,7 +95,7 @@ SYNTHESIZER_CLASSES: Dict[Tuple[str, int], type] = {
 DEFAULT_F0_METHOD = "rmvpe"
 
 #: Allowed f0 extraction methods.
-F0_METHODS = ("harvest", "pm", "crepe", "rmvpe", "fcpe")
+F0_METHODS = ("harvest", "pm", "crepe", "rmvpe", "fcpe", "dsmn")
 
 
 def _resolve_device(device: Optional[str]) -> str:
