@@ -9,6 +9,8 @@
     "Onnx输出路径": "Onnx Dışa Aktarım Yolu:",
     "RVC模型路径": "RVC Model Yolu:",
     "ckpt处理": "ckpt İşleme",
+    "f0自动调律(唱曲修改音高到标准音高)": "f0自动调律(唱曲修改音高到标准音高)",
+    "f0自动调律强度": "f0自动调律强度",
     "rmvpe卡号配置：以-分隔输入使用的不同进程卡号,例如0-0-1使用在卡0上跑2个进程并在卡1上跑1个进程": "rmvpe卡号配置：以-分隔输入使用的不同进程卡号,例如0-0-1使用在卡0上跑2个进程并在卡1上跑1个进程",
     "step1: 填写实验配置. 实验数据放在logs下, 每个实验一个文件夹, 需手工输入实验名路径, 内含实验配置, 日志, 训练得到的模型文件. ": "Adım 1: Deneysel yapılandırmayı doldurun. Deneysel veriler 'logs' klasöründe saklanır ve her bir deney için ayrı bir klasör vardır. Deneysel adı yolu manuel olarak girin; bu yol, deneysel yapılandırmayı, günlükleri ve eğitilmiş model dosyalarını içerir.",
     "step1:正在处理数据": "Adım 1: Veri işleme",

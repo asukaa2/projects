@@ -161,6 +161,8 @@ class VC:
         resample_sr,
         rms_mix_rate,
         protect,
+        f0_autotune=False,
+        f0_autotune_strength=1.0,
     ):
         if input_audio_path is None:
             return "You need to upload an audio", None
@@ -207,6 +209,8 @@ class VC:
                 self.version,
                 protect,
                 f0_file,
+                f0_autotune,
+                f0_autotune_strength,
             )
             if self.tgt_sr != resample_sr >= 16000:
                 self.tgt_sr = resample_sr
@@ -241,6 +245,8 @@ class VC:
         rms_mix_rate,
         protect,
         format1,
+        f0_autotune=False,
+        f0_autotune_strength=1.0,
     ):
         try:
             dir_path = (
@@ -274,6 +280,8 @@ class VC:
                     resample_sr,
                     rms_mix_rate,
                     protect,
+                    f0_autotune,
+                    f0_autotune_strength,
                 )
                 if "Success" in info:
                     try:

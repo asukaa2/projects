@@ -9,6 +9,8 @@
     "Onnx输出路径": "Ruta de salida Onnx",
     "RVC模型路径": "Ruta del modelo RVC",
     "ckpt处理": "Procesamiento de recibos",
+    "f0自动调律(唱曲修改音高到标准音高)": "f0自动调律(唱曲修改音高到标准音高)",
+    "f0自动调律强度": "f0自动调律强度",
     "rmvpe卡号配置：以-分隔输入使用的不同进程卡号,例如0-0-1使用在卡0上跑2个进程并在卡1上跑1个进程": "Separe los números de identificación de la GPU con '-' al ingresarlos. Por ejemplo, '0-1-2' significa usar GPU 0, GPU 1 y GPU 2.",
     "step1: 填写实验配置. 实验数据放在logs下, 每个实验一个文件夹, 需手工输入实验名路径, 内含实验配置, 日志, 训练得到的模型文件. ": "Paso 1: Complete la configuración del experimento. Los datos del experimento se almacenan en el directorio 'logs', con cada experimento en una carpeta separada. La ruta del nombre del experimento debe ingresarse manualmente y debe contener la configuración del experimento, los registros y los archivos del modelo entrenado.",
     "step1:正在处理数据": "Paso 1: Procesando datos",

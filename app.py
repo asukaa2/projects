@@ -259,6 +259,19 @@ with gr.Blocks(title="🔊",theme=gr.themes.Base(primary_hue="blue",neutral_hue=
                             step=0.01,
                             interactive=True,
                         )
+                        f0_autotune0 = gr.Checkbox(
+                            label=i18n("f0自动调律(唱曲修改音高到标准音高)"),
+                            value=False,
+                            interactive=True,
+                        )
+                        f0_autotune_strength0 = gr.Slider(
+                            minimum=0.0,
+                            maximum=1.0,
+                            label=i18n("f0自动调律强度"),
+                            value=1.0,
+                            step=0.01,
+                            interactive=True,
+                        )
                     file_index1 = gr.Textbox(
                         label=i18n("特征检索库文件路径,为空则使用下拉的选择结果"),
                         value="",
@@ -296,6 +309,8 @@ with gr.Blocks(title="🔊",theme=gr.themes.Base(primary_hue="blue",neutral_hue=
                         resample_sr0,
                         rms_mix_rate0,
                         protect0,
+                        f0_autotune0,
+                        f0_autotune_strength0,
                     ],
                     [vc_output1, vc_output2],
                     api_name="infer_convert",
@@ -386,6 +401,19 @@ with gr.Blocks(title="🔊",theme=gr.themes.Base(primary_hue="blue",neutral_hue=
                             step=0.01,
                             interactive=True,
                         )
+                        f0_autotune1 = gr.Checkbox(
+                            label=i18n("f0自动调律(唱曲修改音高到标准音高)"),
+                            value=False,
+                            interactive=True,
+                        )
+                        f0_autotune_strength1 = gr.Slider(
+                            minimum=0.0,
+                            maximum=1.0,
+                            label=i18n("f0自动调律强度"),
+                            value=1.0,
+                            step=0.01,
+                            interactive=True,
+                        )
                     with gr.Row():
                         dir_input = gr.Textbox(
                             label=i18n("输入待处理音频文件夹路径(去文件管理器地址栏拷就行了)"),
@@ -420,6 +448,8 @@ with gr.Blocks(title="🔊",theme=gr.themes.Base(primary_hue="blue",neutral_hue=
                                 resample_sr1,
                                 rms_mix_rate1,
                                 protect1,
+                              f0_autotune1,
+                              f0_autotune_strength1,
                                 format1,
                             ],
                             [vc_output3],

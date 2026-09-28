@@ -916,6 +916,19 @@ with gr.Blocks(title="RVC WebUI") as app:
                             step=0.01,
                             interactive=True,
                         )
+                        f0_autotune0 = gr.Checkbox(
+                            label=i18n("f0自动调律(唱曲修改音高到标准音高)"),
+                            value=False,
+                            interactive=True,
+                        )
+                        f0_autotune_strength0 = gr.Slider(
+                            minimum=0.0,
+                            maximum=1.0,
+                            label=i18n("f0自动调律强度"),
+                            value=1.0,
+                            step=0.01,
+                            interactive=True,
+                        )
                     f0_file = gr.File(label=i18n("F0曲线文件, 可选, 一行一个音高, 代替默认F0及升降调"))
                     but0 = gr.Button(i18n("转换"), variant="primary")
                     with gr.Row():
@@ -937,6 +950,8 @@ with gr.Blocks(title="RVC WebUI") as app:
                             resample_sr0,
                             rms_mix_rate0,
                             protect0,
+                            f0_autotune0,
+                            f0_autotune_strength0,
                         ],
                         [vc_output1, vc_output2],
                         api_name="infer_convert",
@@ -1025,6 +1040,19 @@ with gr.Blocks(title="RVC WebUI") as app:
                             interactive=True,
                         )
                     with gr.Column():
+                        f0_autotune1 = gr.Checkbox(
+                            label=i18n("f0自动调律(唱曲修改音高到标准音高)"),
+                            value=False,
+                            interactive=True,
+                        )
+                        f0_autotune_strength1 = gr.Slider(
+                            minimum=0.0,
+                            maximum=1.0,
+                            label=i18n("f0自动调律强度"),
+                            value=1.0,
+                            step=0.01,
+                            interactive=True,
+                        )
                         dir_input = gr.Textbox(
                             label=i18n("输入待处理音频文件夹路径(去文件管理器地址栏拷就行了)"),
                             value="E:\codes\py39\\test-20230416b\\todo-songs",
@@ -1058,6 +1086,8 @@ with gr.Blocks(title="RVC WebUI") as app:
                             resample_sr1,
                             rms_mix_rate1,
                             protect1,
+                            f0_autotune1,
+                            f0_autotune_strength1,
                             format1,
                         ],
                         [vc_output3],

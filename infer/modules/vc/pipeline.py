@@ -85,6 +85,8 @@ class Pipeline(object):
         f0_method,
         filter_radius,
         inp_f0=None,
+        f0_autotune=False,
+        f0_autotune_strength=1.0,
     ):
         time_step = self.window / self.sr * 1000
         f0_min = 50
@@ -99,8 +101,8 @@ class Pipeline(object):
             f0_up_key=f0_up_key,
             p_len=p_len,
             filter_radius=filter_radius,
-            f0_autotune=False,
-            f0_autotune_strength=1,
+            f0_autotune=f0_autotune,
+            f0_autotune_strength=f0_autotune_strength,
         )
 
         # f0_coarse is already the mel-scaled quantized f0 (1-255)
@@ -246,6 +248,8 @@ class Pipeline(object):
         version,
         protect,
         f0_file=None,
+        f0_autotune=False,
+        f0_autotune_strength=1.0,
     ):
         if (
             file_index != ""
@@ -307,6 +311,8 @@ class Pipeline(object):
                 f0_method,
                 filter_radius,
                 inp_f0,
+                f0_autotune,
+                f0_autotune_strength,
             )
             pitch = pitch[:p_len]
             pitchf = pitchf[:p_len]

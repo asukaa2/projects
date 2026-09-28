@@ -9,6 +9,8 @@
     "Onnx输出路径": "Chemin d'exportation ONNX :",
     "RVC模型路径": "Chemin du modèle RVC :",
     "ckpt处理": "Traitement des fichiers .ckpt",
+    "f0自动调律(唱曲修改音高到标准音高)": "f0自动调律(唱曲修改音高到标准音高)",
+    "f0自动调律强度": "f0自动调律强度",
     "rmvpe卡号配置：以-分隔输入使用的不同进程卡号,例如0-0-1使用在卡0上跑2个进程并在卡1上跑1个进程": "Configuration des numéros de carte RMVPE : séparez les index GPU par des tirets \"-\", par exemple, 0-0-1 pour utiliser 2 processus sur GPU0 et 1 processus sur GPU1.",
     "step1: 填写实验配置. 实验数据放在logs下, 每个实验一个文件夹, 需手工输入实验名路径, 内含实验配置, 日志, 训练得到的模型文件. ": "Étape 1 : Remplissez la configuration expérimentale. Les données expérimentales sont stockées dans le dossier 'logs', avec chaque expérience ayant un dossier distinct. Entrez manuellement le chemin du nom de l'expérience, qui contient la configuration expérimentale, les journaux et les fichiers de modèle entraînés.",
     "step1:正在处理数据": "Étape 1 : Traitement des données en cours.",
