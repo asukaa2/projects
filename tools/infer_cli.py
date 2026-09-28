@@ -84,7 +84,7 @@ def build_parser() -> argparse.ArgumentParser:
     common.add_argument("--f0up_key", type=int, default=0,
                         help="Pitch shift in semitones (default: 0)")
     common.add_argument("--f0method", default="harvest",
-                        choices=["harvest", "pm", "crepe", "rmvpe", "dsmn"],
+                        choices=["harvest", "pm", "crepe", "rmvpe"],
                         help="Pitch-extraction algorithm (default: harvest)")
     common.add_argument("--index_rate", type=float, default=0.66,
                         help="Index blend rate (default: 0.66)")

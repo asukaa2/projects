@@ -191,7 +191,7 @@ sr, audio = inferer.convert(
     "in.wav",
     "out.wav",          # if None, nothing is written and (sr, audio) is returned
     f0up_key=12,        # semitones; +12 = one octave up
-    f0_method="rmvpe",  # 'harvest', 'pm', 'crepe', 'rmvpe', 'fcpe', 'dsmn'
+    f0_method="rmvpe",  # 'harvest', 'pm', 'crepe', 'rmvpe', 'fcpe'
     index_rate=0.75,    # 0.0 disables the index, 1.0 fully trusts it
     filter_radius=3,
     rms_mix_rate=0.25,
